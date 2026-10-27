@@ -1,0 +1,56 @@
+name: helpflow
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: helpflow-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-helpflow}
+      POSTGRES_USER: ${DB_USER:-helpflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-helpflow}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - helpflow-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-helpflow} -d ${DB_NAME:-helpflow}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - helpflow-net
+
+  technician-dispatch-service:
+    build: ./technician-dispatch-service
+    container_name: technician-dispatch-service
+    ports:
+      - "${DISPATCH_PORT:-8081}:8081"
+    networks:
+      - helpflow-net
+
+  support-ticket-service:
+    build: ./support-ticket-service
+    container_name: support-ticket-service
+    depends_on:
+      db:
+        condition: service_healthy
+      technician-dispatch-service:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-helpflow}
+      DB_USER: ${DB_USER:-helpflow}
+      DB_PASSWORD: ${DB_PASSWORD:-helpflow}
+      JWT_SECRET: ${JWT_SECRET:-aGVscGZsb3ctZG9ja2VyLXNlY3JldC1rZXktY2FtYmlhbWUtZW4tcHJvZHVjY2lvbi0yMDI2}
+      # Por la red interna se usa el NOMBRE DEL SERVICIO, no localhost.
+      DISPATCH_URL: http://technician-dispatch-service:8081
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - helpflow-net
+
+networks:
+  helpflow-net:
+    driver: bridge
+
+volumes:
+  helpflow-data:
