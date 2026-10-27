@@ -43,10 +43,57 @@ services:
       JWT_SECRET: ${JWT_SECRET:-aGVscGZsb3ctZG9ja2VyLXNlY3JldC1rZXktY2FtYmlhbWUtZW4tcHJvZHVjY2lvbi0yMDI2}
       # Por la red interna se usa el NOMBRE DEL SERVICIO, no localhost.
       DISPATCH_URL: http://technician-dispatch-service:8081
+      # Credencial técnica con la que Prometheus lee /actuator/prometheus (HTTP Basic).
+      METRICS_SCRAPER_PASSWORD: ${METRICS_SCRAPER_PASSWORD:-helpflow-metrics}
     ports:
       - "${APP_PORT:-8080}:8080"
     networks:
       - helpflow-net
+
+  # ---------- Monitoreo (opcional): docker compose --profile monitoring up -d ----------
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: helpflow-prometheus
+    profiles: ["monitoring"]
+    depends_on:
+      - support-ticket-service
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    configs:
+      # La misma contraseña que recibe support-ticket-service (una sola fuente: METRICS_SCRAPER_PASSWORD).
+      - source: scraper_password
+        target: /etc/prometheus/scraper_password
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - helpflow-net
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: helpflow-grafana
+    profiles: ["monitoring"]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      # Acceso de solo lectura sin login para mostrar el dashboard; editar requiere el usuario admin.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/helpflow.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    networks:
+      - helpflow-net
+
+configs:
+  scraper_password:
+    content: ${METRICS_SCRAPER_PASSWORD:-helpflow-metrics}
 
 networks:
   helpflow-net:
@@ -54,3 +101,5 @@ networks:
 
 volumes:
   helpflow-data:
+  prometheus-data:
+  grafana-data:

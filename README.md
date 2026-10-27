@@ -30,8 +30,20 @@ APP_PORT=8088 DB_PORT=5433 docker compose up --build -d
 ```
 
 Variables (todas tienen valor por defecto): `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (Base64, ≥ 256 bits),
-`APP_PORT`, `DISPATCH_PORT`, `DB_PORT`. Dentro de la red interna el servicio principal llama a dispatch por el
+`APP_PORT`, `DISPATCH_PORT`, `DB_PORT`, `METRICS_SCRAPER_PASSWORD`, `PROMETHEUS_PORT`, `GRAFANA_PORT`,
+`GRAFANA_USER`, `GRAFANA_PASSWORD`. Dentro de la red interna el servicio principal llama a dispatch por el
 **nombre del servicio**: `DISPATCH_URL=http://technician-dispatch-service:8081`.
+
+### Con monitoreo (Prometheus + Grafana)
+```bash
+docker compose --profile monitoring up --build -d
+```
+- Grafana: http://localhost:3000 — abre directamente el dashboard **HelpFlow - Soporte TI** (lectura sin login;
+  para editar, usuario `admin` / `admin`).
+- Prometheus: http://localhost:9090 (en *Status → Targets* el job `support-ticket-service` debe estar `UP`).
+
+El perfil `monitoring` es opcional: `docker compose up` sin él levanta solo la BD y los dos servicios. Para incluirlo
+siempre, agrega `COMPOSE_PROFILES=monitoring` a un archivo `.env`.
 
 ### En local (sin Docker para las apps)
 ```bash
@@ -95,7 +107,8 @@ Reglas: salario > 0 y fecha de afiliación no futura (400 en la API, 422 si lleg
 | GET | `/api/sla-policies` | ADMIN | Políticas de SLA |
 | PUT | `/api/sla-policies/{priority}` | ADMIN | Configurar SLA |
 | GET | `/actuator/health`, `/actuator/info` | público | Salud e información |
-| GET | `/actuator/metrics`, `/actuator/prometheus` | ADMIN | Métricas |
+| GET | `/actuator/metrics` | ADMIN | Métricas |
+| GET | `/actuator/prometheus` | ADMIN o credencial técnica `prometheus` (HTTP Basic) | Métricas para Prometheus |
 | POST | `:8081/technician-dispatch` | (interno) | `{ticketId, categoria, prioridad}` → `{ticketId, tecnicoId, disponibilidad, tiempoEstimadoHoras}` |
 
 ## 4. Reglas de negocio
@@ -270,6 +283,19 @@ Ejemplo:
 | `helpflow.access.denied{source}` | counter | Accesos denegados (role / ownership) |
 | `helpflow.dispatch.time{outcome}` | timer | Latencia de dispatch (success / error) |
 | `helpflow.errors{status,exception}` | counter | Errores devueltos: distingue 500 (BD/código) de 503 (externo) |
+
+En formato Prometheus los puntos pasan a `_` y los contadores llevan `_total`. Ojo: `helpflow.tickets.created` se
+publica como `helpflow_tickets_total`, porque el cliente de Prometheus reserva el sufijo `_created`.
+
+**Dashboard (Grafana).** Con el perfil `monitoring`, Prometheus lee `/actuator/prometheus` cada 15 s y Grafana
+muestra el dashboard provisionado desde `monitoring/grafana/dashboards/helpflow.json`: resumen (creados, vencidos,
+escalados, 5xx), tickets por categoría/prioridad/origen de asignación, tiempos medios de primera respuesta y
+resolución, latencia de dispatch, errores, 401/403, peticiones HTTP y memoria de la JVM.
+
+¿Cómo se autentica Prometheus si la API usa JWT? Prometheus no sabe hacer login ni renovar un token, así que
+`/actuator/prometheus` tiene su propia cadena de seguridad que acepta, además del JWT de ADMIN, **HTTP Basic** con una
+credencial técnica (rol `METRICS`, contraseña `METRICS_SCRAPER_PASSWORD`). Esa credencial no sirve para ningún otro
+endpoint. Sin contraseña configurada, el usuario técnico no existe.
 
 Logs **estructurados** en formato ECS (JSON) con `traceId` en cada línea (MDC). El `traceId` se devuelve en el header
 `X-Trace-Id`, en los ProblemDetail y se propaga a dispatch.

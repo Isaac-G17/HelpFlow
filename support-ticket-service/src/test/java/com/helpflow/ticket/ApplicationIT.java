@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -78,6 +79,20 @@ class ApplicationIT extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         // V3 siembra un ticket vencido.
         assertThat(body).contains("helpflow_tickets_overdue");
+    }
+
+    @Test
+    void prometheusAceptaLaCredencialTecnicaSoloEnSuEndpoint() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus").with(httpBasic("prometheus", SCRAPER_PASSWORD)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/prometheus").with(httpBasic("prometheus", "incorrecta")))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/prometheus")
+                        .header(HttpHeaders.AUTHORIZATION, login("ana@helpflow.com", SEED_PASSWORD)))
+                .andExpect(status().isForbidden());
+        // La credencial técnica no sirve para el resto de Actuator ni para la API.
+        mockMvc.perform(get("/actuator/metrics").with(httpBasic("prometheus", SCRAPER_PASSWORD)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

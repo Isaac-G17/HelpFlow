@@ -43,6 +43,11 @@ helpflow:
     escalation-threshold-percent: 20
     scheduler-enabled: ${SLA_SCHEDULER_ENABLED:true}
     escalation-interval: PT5M
+  metrics:
+    # Credencial técnica (HTTP Basic) solo para /actuator/prometheus. Vacía = deshabilitada.
+    scraper:
+      username: ${METRICS_SCRAPER_USER:prometheus}
+      password: ${METRICS_SCRAPER_PASSWORD:}
 
 management:
   endpoints:

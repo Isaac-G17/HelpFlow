@@ -31,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "helpflow.sla.scheduler-enabled=false",
         "logging.structured.format.console=",
-        "helpflow.dispatch.base-url=http://localhost:1"
+        "helpflow.dispatch.base-url=http://localhost:1",
+        "helpflow.metrics.scraper.password=" + AbstractIntegrationTest.SCRAPER_PASSWORD
 })
 public abstract class AbstractIntegrationTest {
 
@@ -41,6 +42,9 @@ public abstract class AbstractIntegrationTest {
 
     /** Contraseña de todos los usuarios semilla (V3__datos_iniciales). */
     protected static final String SEED_PASSWORD = "Password123*";
+
+    /** Credencial técnica de Prometheus (usuario por defecto "prometheus"). */
+    protected static final String SCRAPER_PASSWORD = "scraper-test";
 
     private static final AtomicLong SEQUENCE = new AtomicLong(System.currentTimeMillis() % 1_000_000);
 
