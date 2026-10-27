@@ -26,20 +26,15 @@ public enum TicketStatus {
         return ACTIVE;
     }
 
-    /**
-     * ¿Es válida la transición this -> target?
-     *
-     * TODO (tú): implementar la máquina de estados aprobada:
-     *   ABIERTO     -> ASIGNADO | CANCELADO
-     *   ASIGNADO    -> EN_PROGRESO | CANCELADO
-     *   EN_PROGRESO -> RESUELTO | CANCELADO
-     *   RESUELTO    -> CERRADO | EN_PROGRESO   (reapertura)
-     *   CERRADO, CANCELADO -> ninguna (finales)
-     *
-     *  Pista: un switch expression sobre this que devuelva un Set.of(...) y luego contains(target).
-     *  Ojo: la transición a sí mismo (ABIERTO -> ABIERTO) NO es válida.
-     */
+
     public boolean canTransitionTo(TicketStatus target) {
-        throw new UnsupportedOperationException("TODO: TicketStatus.canTransitionTo");
+        Set<TicketStatus> allowed = switch (this) {
+            case ABIERTO -> Set.of(ASIGNADO, CANCELADO);
+            case ASIGNADO -> Set.of(EN_PROGRESO, CANCELADO);
+            case EN_PROGRESO -> Set.of(RESUELTO, CANCELADO);
+            case RESUELTO -> Set.of(CERRADO, EN_PROGRESO);
+            case CERRADO, CANCELADO -> Set.of();
+        };
+        return allowed.contains(target);
     }
 }

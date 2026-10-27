@@ -71,7 +71,30 @@ public class Ticket {
      */
     public static Ticket open(User requester, String title, String description, Category category, Priority priority,
                               String sede, String affectedAsset, SlaPolicy policy, Instant now) {
-        throw new UnsupportedOperationException("TODO: Ticket.open");
+        requester.ensureActive();
+        DomainValidation.requireNonNull(category, "category");
+        DomainValidation.requireNonNull(priority, "priority");
+        if (policy.priority() != priority) {
+            throw new BusinessRuleException("La política de SLA (" + policy.priority()
+                    + ") no corresponde a la prioridad del ticket (" + priority + ")");
+        }
+        Instant slaDeadline = policy.resolutionDeadlineFrom(now);
+        return new Ticket(null,
+                requester.getId(),
+                DomainValidation.requireText(title, "title"),
+                DomainValidation.requireText(description, "description"),
+                category,
+                priority,
+                DomainValidation.normalizeSede(sede),
+                DomainValidation.requireText(affectedAsset, "affectedAsset"),
+                TicketStatus.ABIERTO,
+                null,
+                false,
+                now,
+                slaDeadline,
+                null,
+                null,
+                null);
     }
 
     /**
@@ -84,7 +107,16 @@ public class Ticket {
      *  4. this.technicianId = technician.getId(); this.status = ASIGNADO.
      */
     public void assignTo(Technician technician) {
-        throw new UnsupportedOperationException("TODO: Ticket.assignTo");
+        if (status != TicketStatus.ABIERTO) {
+            throw new InvalidStateTransitionException(status, TicketStatus.ASIGNADO);
+        }
+        if (!technician.canAttend(category)) {
+            throw new BusinessRuleException("El técnico " + technician.getCode()
+                    + " no atiende la categoría " + category);
+        }
+        technician.takeTicket();
+        this.technicianId = technician.getId();
+        this.status = TicketStatus.ASIGNADO;
     }
 
     /**
@@ -99,7 +131,20 @@ public class Ticket {
      *  5. technicianId = nuevo; status = ASIGNADO (vuelve a empezar la atención).
      */
     public void reassignTo(Technician previous, Technician newTechnician) {
-        throw new UnsupportedOperationException("TODO: Ticket.reassignTo");
+        if (status != TicketStatus.ASIGNADO && status != TicketStatus.EN_PROGRESO) {
+            throw new InvalidStateTransitionException("Solo se reasignan tickets ASIGNADO o EN_PROGRESO");
+        }
+        if (newTechnician.getId().equals(technicianId)) {
+            throw new BusinessRuleException("El ticket ya está asignado al técnico " + newTechnician.getCode());
+        }
+        if (!newTechnician.canAttend(category)) {
+            throw new BusinessRuleException("El técnico " + newTechnician.getCode()
+                    + " no atiende la categoría " + category);
+        }
+        newTechnician.takeTicket();
+        previous.releaseTicket();
+        this.technicianId = newTechnician.getId();
+        this.status = TicketStatus.ASIGNADO;
     }
 
     /**
@@ -121,7 +166,42 @@ public class Ticket {
      *  5. Guarda el estado anterior, asigna status = target y devuelve el anterior.
      */
     public TicketStatus changeStatus(TicketStatus target, Role actorRole, Instant now) {
-        throw new UnsupportedOperationException("TODO: Ticket.changeStatus");
+        if (target == TicketStatus.ASIGNADO) {
+            throw new InvalidStateTransitionException(
+                    "El estado ASIGNADO solo se alcanza mediante una asignación de técnico");
+        }
+        if (!status.canTransitionTo(target)) {
+            throw new InvalidStateTransitionException(status, target);
+        }
+        if (!roleAllows(actorRole, status, target)) {
+            throw new ForbiddenOperationException("El rol " + actorRole
+                    + " no puede cambiar el ticket de " + status + " a " + target);
+        }
+
+        if (target == TicketStatus.EN_PROGRESO && firstResponseAt == null) {
+            firstResponseAt = now;
+        }
+        if (target == TicketStatus.RESUELTO) {
+            resolvedAt = now;
+        }
+        if (status == TicketStatus.RESUELTO && target == TicketStatus.EN_PROGRESO) {
+            resolvedAt = null;
+        }
+
+        TicketStatus previous = status;
+        status = target;
+        return previous;
+    }
+
+    private static boolean roleAllows(Role role, TicketStatus from, TicketStatus to) {
+        return switch (role) {
+            case ADMIN -> true;
+            case TECNICO -> (from == TicketStatus.ASIGNADO && to == TicketStatus.EN_PROGRESO)
+                    || (from == TicketStatus.EN_PROGRESO && to == TicketStatus.RESUELTO);
+            case USUARIO -> (from == TicketStatus.ABIERTO && to == TicketStatus.CANCELADO)
+                    || (from == TicketStatus.RESUELTO && to == TicketStatus.CERRADO)
+                    || (from == TicketStatus.RESUELTO && to == TicketStatus.EN_PROGRESO);
+        };
     }
 
     /** EJEMPLO RESUELTO: vencido = sigue activo y ya pasó la fecha límite. Úsalo como guía para isNearSlaBreach. */
@@ -140,7 +220,12 @@ public class Ticket {
      *  Pista: trabaja en segundos o milisegundos (toMillis()) para no perder precisión.
      */
     public boolean isNearSlaBreach(Instant now, int thresholdPercent) {
-        throw new UnsupportedOperationException("TODO: Ticket.isNearSlaBreach");
+        if (!status.isActive()) {
+            return false;
+        }
+        long total = Duration.between(createdAt, slaDeadline).toMillis();
+        long remaining = Duration.between(now, slaDeadline).toMillis();
+        return remaining * 100 <= total * thresholdPercent;
     }
 
     /**
@@ -153,7 +238,16 @@ public class Ticket {
      *  Decisión: la fecha límite de SLA NO cambia (el compromiso con el usuario se mantiene).
      */
     public Priority escalate() {
-        throw new UnsupportedOperationException("TODO: Ticket.escalate");
+        if (escalated) {
+            throw new BusinessRuleException("El ticket ya fue escalado");
+        }
+        if (!status.isActive()) {
+            throw new BusinessRuleException("Solo se escalan tickets activos (estado actual: " + status + ")");
+        }
+        Priority previous = priority;
+        priority = priority.next();
+        escalated = true;
+        return previous;
     }
 
     public boolean isOwnedBy(Long userId) {

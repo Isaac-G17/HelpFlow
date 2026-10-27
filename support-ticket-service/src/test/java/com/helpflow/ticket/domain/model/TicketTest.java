@@ -8,7 +8,6 @@ import com.helpflow.ticket.domain.model.enums.Category;
 import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.domain.model.enums.Role;
 import com.helpflow.ticket.domain.model.enums.TicketStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -18,7 +17,7 @@ import static com.helpflow.ticket.domain.model.TestData.NOW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Disabled("TODO: quita esta línea cuando implementes los métodos de Ticket (y antes TicketStatus/Technician)")
+
 class TicketTest {
 
     private final SlaPolicy alta = new SlaPolicy(Priority.ALTA, 2, 8);

@@ -15,6 +15,11 @@ public enum Priority {
      *  Pista: puedes usar ordinal() y values(), o un switch expression.
      */
     public Priority next() {
-        throw new UnsupportedOperationException("TODO: Priority.next");
+
+        return switch (this) {
+            case BAJA -> MEDIA;
+            case MEDIA -> ALTA;
+            case ALTA, CRITICA -> CRITICA;
+        };
     }
 }

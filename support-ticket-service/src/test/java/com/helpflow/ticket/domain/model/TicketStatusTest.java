@@ -3,14 +3,12 @@ package com.helpflow.ticket.domain.model;
 import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.domain.model.enums.TicketStatus;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Disabled("TODO: quita esta línea cuando implementes TicketStatus.canTransitionTo y Priority.next")
 class TicketStatusTest {
 
     @ParameterizedTest

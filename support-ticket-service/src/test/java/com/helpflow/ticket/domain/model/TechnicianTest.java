@@ -3,13 +3,12 @@ package com.helpflow.ticket.domain.model;
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
 import com.helpflow.ticket.domain.exception.TechnicianCapacityExceededException;
 import com.helpflow.ticket.domain.model.enums.Category;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Disabled("TODO: quita esta línea cuando implementes canAttend, hasCapacity, takeTicket y releaseTicket")
+
 class TechnicianTest {
 
     @Test

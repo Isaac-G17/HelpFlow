@@ -92,14 +92,14 @@ public class Technician {
      *  2. En otro caso, la especialidad del técnico debe ser igual a la categoría.
      */
     public boolean canAttend(Category category) {
-        throw new UnsupportedOperationException("TODO: Technician.canAttend");
+        return category == Category.OTRO || specialty == category;
     }
 
     /**
      * TODO (tú): true si todavía puede recibir otro ticket (activeTickets < maxActiveTickets).
      */
-    public boolean hasCapacity() {
-        throw new UnsupportedOperationException("TODO: Technician.hasCapacity");
+    public boolean hasCapacity(){
+        return activeTickets < maxActiveTickets;
     }
 
     /**
@@ -111,7 +111,11 @@ public class Technician {
      *  3. activeTickets++.
      */
     public void takeTicket() {
-        throw new UnsupportedOperationException("TODO: Technician.takeTicket");
+        ensureActive();
+        if (!hasCapacity()) {
+            throw new TechnicianCapacityExceededException(code, maxActiveTickets);
+        }
+        activeTickets++;
     }
 
     /**
@@ -122,7 +126,10 @@ public class Technician {
      *  2. activeTickets--.
      */
     public void releaseTicket() {
-        throw new UnsupportedOperationException("TODO: Technician.releaseTicket");
+        if (activeTickets == 0) {
+            throw new BusinessRuleException("El técnico " + code + " no tiene tickets activos para liberar");
+        }
+        activeTickets--;
     }
 
     /** Edición del perfil de soporte (ADMIN). La fecha de afiliación no se modifica. */
