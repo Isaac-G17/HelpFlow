@@ -2,8 +2,11 @@ package com.helpflow.ticket.application.service;
 
 import com.helpflow.ticket.application.port.in.AssignTicketUseCase;
 import com.helpflow.ticket.application.port.in.CreateTicketUseCase;
+import com.helpflow.ticket.application.port.in.AssignTicketUseCase.AssignTicketCommand;
 import com.helpflow.ticket.application.port.out.TechnicianDispatchPort;
+import com.helpflow.ticket.domain.exception.TechnicianDispatchUnavailableException;
 import com.helpflow.ticket.domain.model.CurrentUser;
+import com.helpflow.ticket.domain.model.DispatchSuggestion;
 import com.helpflow.ticket.domain.model.Ticket;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +47,14 @@ public class CreateTicketService implements CreateTicketUseCase {
      */
     @Override
     public Ticket create(CreateTicketCommand command, CurrentUser actor) {
-        throw new UnsupportedOperationException("TODO: CreateTicketService.create");
+        Ticket ticket = registration.open(command, actor);
+        try {
+            DispatchSuggestion suggestion = dispatchPort.requestTechnician(
+                    ticket.getId(), ticket.getCategory(), ticket.getPriority());
+            return assignTicketUseCase.assign(new AssignTicketCommand(ticket.getId(), suggestion, actor.id()));
+        } catch (TechnicianDispatchUnavailableException e) {
+            registration.recordDispatchFailure(ticket.getId(), e.getMessage());
+            return registration.reload(ticket.getId());
+        }
     }
 }

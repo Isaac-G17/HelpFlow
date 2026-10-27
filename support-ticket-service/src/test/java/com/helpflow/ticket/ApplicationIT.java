@@ -265,7 +265,6 @@ class ApplicationIT extends AbstractIntegrationTest {
     // ======================= Tickets: flujo completo (activar al terminar los TODO) =======================
 
     @Test
-    @Disabled("TODO: activar cuando implementes CreateTicketService + AssignTicketService + dominio")
     void crearTicketLoAsignaConElTecnicoSugerido() throws Exception {
         when(dispatchPort.requestTechnician(anyLong(), any(Category.class), any(Priority.class)))
                 .thenAnswer(inv -> new DispatchSuggestion(inv.getArgument(0), "TEC-001", Availability.ALTA, 1));
@@ -286,7 +285,6 @@ class ApplicationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: activar cuando implementes CreateTicketService y AutoAssignTicketService")
     void siDispatchEstaCaidoElTicketQuedaAbiertoYAutoAssignDevuelve503() throws Exception {
         when(dispatchPort.requestTechnician(anyLong(), any(), any()))
                 .thenThrow(new TechnicianDispatchUnavailableException("caído", null));
@@ -305,7 +303,6 @@ class ApplicationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: activar cuando implementes QueryTicketService.ensureCanView")
     void unUsuarioNoPuedeVerElTicketDeOtro() throws Exception {
         String luis = login("luis@helpflow.com", SEED_PASSWORD);
         JsonNode anaTickets = json(mockMvc.perform(get("/api/tickets")
@@ -318,7 +315,6 @@ class ApplicationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("TODO: activar cuando implementes ChangeTicketStatusService y el dominio")
     void transicionesValidasEInvalidas() throws Exception {
         when(dispatchPort.requestTechnician(anyLong(), any(Category.class), any(Priority.class)))
                 .thenAnswer(inv -> new DispatchSuggestion(inv.getArgument(0), "TEC-003", Availability.ALTA, 1));

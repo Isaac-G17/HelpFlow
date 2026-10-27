@@ -10,6 +10,8 @@ import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
 import com.helpflow.ticket.domain.model.CurrentUser;
 import com.helpflow.ticket.domain.model.Ticket;
 import com.helpflow.ticket.domain.model.TicketHistory;
+import com.helpflow.ticket.domain.model.SlaPolicy;
+import com.helpflow.ticket.domain.model.User;
 import com.helpflow.ticket.domain.model.enums.HistoryAction;
 import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 
 /**
  * Pasos transaccionales del registro de un ticket. Está en un bean aparte de CreateTicketService
@@ -63,7 +66,23 @@ public class TicketRegistrationService {
      */
     @Transactional
     public Ticket open(CreateTicketCommand command, CurrentUser actor) {
-        throw new UnsupportedOperationException("TODO: TicketRegistrationService.open");
+        Instant now = clock.instant();
+        User requester = userRepository.findById(actor.id())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", actor.id()));
+        SlaPolicy policy = slaPolicyRepository.findByPriority(command.priority())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe política de SLA para la prioridad " + command.priority()));
+
+        Ticket ticket = Ticket.open(requester, command.title(), command.description(), command.category(),
+                command.priority(), command.sede(), command.affectedAsset(), policy, now);
+        Ticket saved = ticketRepository.save(ticket);
+
+        historyRepository.save(TicketHistory.of(saved.getId(), null, TicketStatus.ABIERTO, HistoryAction.CREATED,
+                "Ticket registrado", actor.id(), now));
+        metrics.ticketCreated(saved.getCategory(), saved.getPriority());
+        log.info("Ticket {} registrado: categoria={}, prioridad={}, slaDeadline={}",
+                saved.getId(), saved.getCategory(), saved.getPriority(), saved.getSlaDeadline());
+        return saved;
     }
 
     /** Deja constancia de que dispatch no respondió: el ticket queda ABIERTO y no se pierde. */

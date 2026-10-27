@@ -5,6 +5,7 @@ import com.helpflow.ticket.application.port.out.TechnicianRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketHistoryRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketRepositoryPort;
 import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
+import com.helpflow.ticket.domain.exception.ForbiddenOperationException;
 import com.helpflow.ticket.domain.model.CurrentUser;
 import com.helpflow.ticket.domain.model.PageQuery;
 import com.helpflow.ticket.domain.model.PageResult;
@@ -83,6 +84,15 @@ public class QueryTicketService implements QueryTicketUseCase {
      *  Este mismo método lo reutilizarás en ChangeTicketStatusService (o extráelo a una clase TicketAccessPolicy).
      */
     void ensureCanView(Ticket ticket, CurrentUser actor) {
-        throw new UnsupportedOperationException("TODO: QueryTicketService.ensureCanView");
+        boolean allowed = switch (actor.role()) {
+            case ADMIN -> true;
+            case USUARIO -> ticket.isOwnedBy(actor.id());
+            case TECNICO -> technicianRepository.findByUserId(actor.id())
+                    .map(technician -> ticket.isAssignedTo(technician.getId()))
+                    .orElse(false);
+        };
+        if (!allowed) {
+            throw new ForbiddenOperationException("No tiene acceso a este ticket");
+        }
     }
 }

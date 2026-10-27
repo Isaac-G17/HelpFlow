@@ -2,9 +2,14 @@ package com.helpflow.ticket.application.service;
 
 import com.helpflow.ticket.application.port.in.AssignTicketUseCase;
 import com.helpflow.ticket.application.port.in.AutoAssignTicketUseCase;
+import com.helpflow.ticket.application.port.in.AssignTicketUseCase.AssignTicketCommand;
 import com.helpflow.ticket.application.port.out.TechnicianDispatchPort;
 import com.helpflow.ticket.application.port.out.TicketRepositoryPort;
+import com.helpflow.ticket.domain.exception.InvalidStateTransitionException;
+import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
 import com.helpflow.ticket.domain.model.CurrentUser;
+import com.helpflow.ticket.domain.model.DispatchSuggestion;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import com.helpflow.ticket.domain.model.Ticket;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +38,13 @@ public class AutoAssignTicketService implements AutoAssignTicketUseCase {
      */
     @Override
     public Ticket autoAssign(Long ticketId, CurrentUser actor) {
-        throw new UnsupportedOperationException("TODO: AutoAssignTicketService.autoAssign");
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+        if (ticket.getStatus() != TicketStatus.ABIERTO) {
+            throw new InvalidStateTransitionException("Solo se auto-asignan tickets ABIERTO");
+        }
+        DispatchSuggestion suggestion = dispatchPort.requestTechnician(
+                ticket.getId(), ticket.getCategory(), ticket.getPriority());
+        return assignTicketUseCase.assign(new AssignTicketCommand(ticket.getId(), suggestion, actor.id()));
     }
 }

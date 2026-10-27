@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /** Prueba del flujo obligatorio con el TechnicianDispatchPort simulado (mock). */
-@Disabled("TODO: quita esta línea cuando implementes CreateTicketService.create")
+
 @ExtendWith(MockitoExtension.class)
 class CreateTicketServiceTest {
 

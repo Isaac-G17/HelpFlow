@@ -5,9 +5,15 @@ import com.helpflow.ticket.application.port.out.SlaSettingsPort;
 import com.helpflow.ticket.application.port.out.TicketHistoryRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketMetricsPort;
 import com.helpflow.ticket.application.port.out.TicketRepositoryPort;
+import com.helpflow.ticket.domain.model.Ticket;
+import com.helpflow.ticket.domain.model.TicketHistory;
+import com.helpflow.ticket.domain.model.enums.HistoryAction;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.Instant;
 import java.time.Clock;
 
 /** Escalamiento por SLA. Lo dispara el scheduler (cada 5 min) o un ADMIN a mano. */
@@ -19,6 +25,7 @@ public class EscalateTicketsService implements EscalateTicketsUseCase {
     private final SlaSettingsPort slaSettings;
     private final TicketMetricsPort metrics;
     private final Clock clock;
+    private static final Logger log = LoggerFactory.getLogger(EscalateTicketsService.class);
 
     public EscalateTicketsService(TicketRepositoryPort ticketRepository, TicketHistoryRepositoryPort historyRepository,
                                   SlaSettingsPort slaSettings, TicketMetricsPort metrics, Clock clock) {
@@ -46,6 +53,24 @@ public class EscalateTicketsService implements EscalateTicketsUseCase {
     @Override
     @Transactional
     public int escalateNearBreach() {
-        throw new UnsupportedOperationException("TODO: EscalateTicketsService.escalateNearBreach");
+        Instant now = clock.instant();
+        int threshold = slaSettings.escalationThresholdPercent();
+        int escalatedCount = 0;
+
+        for (Ticket ticket : ticketRepository.findActiveNotEscalated()) {
+            if (!ticket.isNearSlaBreach(now, threshold)) {
+                continue;
+            }
+            Priority previous = ticket.escalate();
+            ticketRepository.save(ticket);
+            historyRepository.save(TicketHistory.of(ticket.getId(), ticket.getStatus(), ticket.getStatus(),
+                    HistoryAction.ESCALATED, "Escalado por SLA: " + previous + " -> " + ticket.getPriority(),
+                    null, now));
+            escalatedCount++;
+        }
+
+        metrics.ticketsEscalated(escalatedCount);
+        log.info("Escalamiento SLA: {} tickets escalados (umbral {} %)", escalatedCount, threshold);
+        return escalatedCount;
     }
 }

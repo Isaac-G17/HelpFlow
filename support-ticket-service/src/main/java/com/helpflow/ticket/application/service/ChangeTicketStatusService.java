@@ -5,11 +5,19 @@ import com.helpflow.ticket.application.port.out.TechnicianRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketHistoryRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketMetricsPort;
 import com.helpflow.ticket.application.port.out.TicketRepositoryPort;
+import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
+import com.helpflow.ticket.domain.model.Technician;
+import com.helpflow.ticket.domain.model.TicketHistory;
+import com.helpflow.ticket.domain.model.enums.HistoryAction;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import com.helpflow.ticket.domain.model.CurrentUser;
 import com.helpflow.ticket.domain.model.Ticket;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.Instant;
 import java.time.Clock;
 
 @Service
@@ -21,6 +29,7 @@ public class ChangeTicketStatusService implements ChangeTicketStatusUseCase {
     private final QueryTicketService queryTicketService;
     private final TicketMetricsPort metrics;
     private final Clock clock;
+    private static final Logger log = LoggerFactory.getLogger(ChangeTicketStatusService.class);
 
     public ChangeTicketStatusService(TicketRepositoryPort ticketRepository, TechnicianRepositoryPort technicianRepository,
                                      TicketHistoryRepositoryPort historyRepository,
@@ -51,6 +60,46 @@ public class ChangeTicketStatusService implements ChangeTicketStatusUseCase {
     @Override
     @Transactional
     public Ticket changeStatus(ChangeStatusCommand command, CurrentUser actor) {
-        throw new UnsupportedOperationException("TODO: ChangeTicketStatusService.changeStatus");
+        Instant now = clock.instant();
+        Ticket ticket = queryTicketService.getById(command.ticketId(), actor);
+        boolean firstResponse = ticket.getFirstResponseAt() == null;
+        TicketStatus target = command.target();
+
+        TicketStatus previous = ticket.changeStatus(target, actor.role(), now);
+        updateTechnicianLoad(ticket, previous, target);
+        Ticket saved = ticketRepository.save(ticket);
+
+        historyRepository.save(TicketHistory.of(saved.getId(), previous, target, HistoryAction.STATUS_CHANGED,
+                command.observation(), actor.id(), now));
+
+        metrics.statusChanged(target);
+        if (target == TicketStatus.EN_PROGRESO && firstResponse) {
+            metrics.firstResponse(ticket.elapsedUntil(now));
+        }
+        if (target == TicketStatus.RESUELTO) {
+            metrics.resolution(ticket.elapsedUntil(now));
+        }
+        log.info("Ticket {}: {} -> {} por {} ({})", saved.getId(), previous, target, actor.email(), actor.role());
+        return saved;
+    }
+
+    private void updateTechnicianLoad(Ticket ticket, TicketStatus previous, TicketStatus target) {
+        if (ticket.getTechnicianId() == null) {
+            return;
+        }
+        boolean releases = (target == TicketStatus.RESUELTO || target == TicketStatus.CANCELADO)
+                && (previous == TicketStatus.ASIGNADO || previous == TicketStatus.EN_PROGRESO);
+        boolean reopens = previous == TicketStatus.RESUELTO && target == TicketStatus.EN_PROGRESO;
+        if (!releases && !reopens) {
+            return;
+        }
+        Technician technician = technicianRepository.findById(ticket.getTechnicianId())
+                .orElseThrow(() -> new ResourceNotFoundException("Técnico", ticket.getTechnicianId()));
+        if (releases) {
+            technician.releaseTicket();
+        } else {
+            technician.takeTicket();
+        }
+        technicianRepository.save(technician);
     }
 }

@@ -6,6 +6,11 @@ import com.helpflow.ticket.application.port.out.TechnicianRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketHistoryRepositoryPort;
 import com.helpflow.ticket.application.port.out.TicketMetricsPort;
 import com.helpflow.ticket.application.port.out.TicketRepositoryPort;
+import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
+import com.helpflow.ticket.domain.model.Assignment;
+import com.helpflow.ticket.domain.model.TicketHistory;
+import com.helpflow.ticket.domain.model.enums.HistoryAction;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import com.helpflow.ticket.domain.model.DispatchSuggestion;
 import com.helpflow.ticket.domain.model.Technician;
 import com.helpflow.ticket.domain.model.Ticket;
@@ -18,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -70,7 +77,36 @@ public class AssignTicketService implements AssignTicketUseCase {
     @Override
     @Transactional
     public Ticket assign(AssignTicketCommand command) {
-        throw new UnsupportedOperationException("TODO: AssignTicketService.assign");
+        Instant now = clock.instant();
+        Ticket ticket = ticketRepository.findById(command.ticketId())
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", command.ticketId()));
+
+        Optional<Selection> selection = selectTechnician(ticket, command.suggestion(), now);
+        if (selection.isEmpty()) {
+            historyRepository.save(TicketHistory.of(ticket.getId(), TicketStatus.ABIERTO, TicketStatus.ABIERTO,
+                    HistoryAction.DISPATCH_FAILED, "Sin técnico disponible que cumpla las reglas de asignación",
+                    command.performedBy(), now));
+            log.warn("Ticket {} queda ABIERTO: ningún técnico cumple las reglas de asignación", ticket.getId());
+            return ticket;
+        }
+
+        Technician technician = selection.get().technician();
+        AssignmentOrigin origin = selection.get().origin();
+
+        ticket.assignTo(technician);
+        technicianRepository.save(technician);
+        Ticket saved = ticketRepository.save(ticket);
+
+        assignmentRepository.save(origin == AssignmentOrigin.DISPATCH
+                ? Assignment.fromDispatch(saved.getId(), technician.getId(), command.suggestion(), now)
+                : Assignment.fallback(saved.getId(), technician.getId(), now));
+        historyRepository.save(TicketHistory.of(saved.getId(), TicketStatus.ABIERTO, TicketStatus.ASIGNADO,
+                HistoryAction.ASSIGNED, "Asignado a " + technician.getCode() + " (" + origin + ")",
+                command.performedBy(), now));
+
+        metrics.ticketAssigned(origin);
+        log.info("Ticket {} asignado a {} (origen={})", saved.getId(), technician.getCode(), origin);
+        return saved;
     }
 
     /**
@@ -88,7 +124,22 @@ public class AssignTicketService implements AssignTicketUseCase {
      *  4. Si nadie cumple -> Optional.empty().
      */
     Optional<Selection> selectTechnician(Ticket ticket, DispatchSuggestion suggestion, Instant now) {
-        throw new UnsupportedOperationException("TODO: AssignTicketService.selectTechnician");
+        Optional<Technician> suggested = technicianRepository.findByCode(suggestion.technicianCode());
+        if (suggested.isPresent() && isEligible(suggested.get(), ticket, suggestion, now)) {
+            return Optional.of(new Selection(suggested.get(), AssignmentOrigin.DISPATCH));
+        }
+
+        List<Technician> candidates = technicianRepository.findActiveCandidates(ticket.getCategory());
+        Optional<Technician> local = candidates.stream()
+                .filter(Technician::hasCapacity)
+                .filter(technician -> technician.getSede().equals(ticket.getSede()))
+                .findFirst();
+        if (local.isEmpty() && ticket.getPriority() == Priority.CRITICA) {
+            local = candidates.stream()
+                    .filter(Technician::hasCapacity)
+                    .findFirst();
+        }
+        return local.map(technician -> new Selection(technician, AssignmentOrigin.FALLBACK));
     }
 
     /**
@@ -102,7 +153,12 @@ public class AssignTicketService implements AssignTicketUseCase {
      *  5. Cumplimiento del SLA:      now + suggestion.estimatedHours() horas <= ticket.getSlaDeadline()
      */
     boolean isEligible(Technician technician, Ticket ticket, DispatchSuggestion suggestion, Instant now) {
-        throw new UnsupportedOperationException("TODO: AssignTicketService.isEligible");
+        Instant estimatedEnd = now.plus(Duration.ofHours(suggestion.estimatedHours()));
+        return technician.isActive()
+                && technician.canAttend(ticket.getCategory())
+                && technician.hasCapacity()
+                && sedeAllowed(technician, ticket)
+                && !estimatedEnd.isAfter(ticket.getSlaDeadline());
     }
 
     /** Resultado de la selección: qué técnico y por qué vía. */
