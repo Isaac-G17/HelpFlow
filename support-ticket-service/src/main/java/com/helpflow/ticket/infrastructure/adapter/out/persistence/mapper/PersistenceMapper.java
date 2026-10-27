@@ -31,7 +31,10 @@ public interface PersistenceMapper {
     UserEntity toEntity(User user);
 
     // ---------- Technician ----------
+    // Documento y nombre se leen del usuario vinculado (no se duplican en la tabla technicians).
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "document", source = "user.document")
+    @Mapping(target = "name", source = "user.name")
     Technician toDomain(TechnicianEntity entity);
 
     @Mapping(target = "user", ignore = true)
@@ -40,6 +43,7 @@ public interface PersistenceMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "code", ignore = true)
     @Mapping(target = "user", ignore = true)
+    @Mapping(target = "affiliationDate", ignore = true)
     @Mapping(target = "version", ignore = true)
     void updateEntity(Technician technician, @MappingTarget TechnicianEntity entity);
 

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
@@ -49,8 +50,9 @@ public class TechnicianService implements ManageTechnicianUseCase {
         User user = userRepository.save(User.create(command.document(), command.name(), email, command.sede(),
                 "Soporte", passwordEncoder.encode(command.password()), Role.TECNICO, clock.instant()));
 
-        Technician technician = technicianRepository.save(Technician.create(nextCode(), user.getId(),
-                command.specialty(), command.sede(), command.maxActiveTickets()));
+        Technician technician = technicianRepository.save(Technician.create(nextCode(), user, command.salary(),
+                command.affiliationDate(), command.specialty(), command.sede(), command.maxActiveTickets(),
+                LocalDate.now(clock)));
         log.info("Técnico creado code={} userId={} specialty={}", technician.getCode(), user.getId(),
                 technician.getSpecialty());
         return technician;
@@ -67,7 +69,8 @@ public class TechnicianService implements ManageTechnicianUseCase {
     public Technician update(Long technicianId, UpdateTechnicianCommand command) {
         Technician technician = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Técnico", technicianId));
-        technician.updateProfile(command.specialty(), command.sede(), command.maxActiveTickets(), command.status());
+        technician.updateProfile(command.specialty(), command.sede(), command.salary(), command.maxActiveTickets(),
+                command.status());
         log.info("Perfil de soporte actualizado code={}", technician.getCode());
         return technicianRepository.save(technician);
     }

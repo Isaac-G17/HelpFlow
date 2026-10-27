@@ -6,7 +6,9 @@ import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.domain.model.enums.Role;
 import com.helpflow.ticket.domain.model.enums.TicketStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 /** Fábricas de objetos de dominio para las pruebas (sin pasar por los TODO). */
 public final class TestData {
@@ -27,7 +29,8 @@ public final class TestData {
     }
 
     public static Technician technician(Long id, String code, Category specialty, String sede, int active, int max) {
-        return new Technician(id, code, 100 + id, specialty, sede, AccountStatus.ACTIVO, max, active, 0L);
+        return new Technician(id, code, 100 + id, "200" + id, "Tecnico " + id, new BigDecimal("3000000.00"),
+                LocalDate.of(2022, 1, 10), specialty, sede, AccountStatus.ACTIVO, max, active, 0L);
     }
 
     /** Ticket ABIERTO creado en NOW con SLA de 8 h (ALTA). */

@@ -18,6 +18,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "technicians")
 @Getter
@@ -35,6 +38,12 @@ public class TechnicianEntity {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private UserEntity user;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal salary;
+
+    @Column(name = "affiliation_date", nullable = false, updatable = false)
+    private LocalDate affiliationDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)

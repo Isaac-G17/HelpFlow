@@ -16,13 +16,16 @@ import java.util.zip.CRC32;
 @Service
 public class TechnicianDispatchService {
 
-    /** Catálogo fijo: 2 técnicos por categoría. Coincide con los técnicos semilla del servicio principal. */
+    /**
+     * Catálogo fijo: 3 técnicos por categoría (MEDELLIN, BOGOTA, BARRANQUILLA).
+     * Coincide con los técnicos semilla del servicio principal.
+     */
     private static final Map<String, List<String>> CATALOG = Map.of(
-            "HARDWARE", List.of("TEC-001", "TEC-002"),
-            "SOFTWARE", List.of("TEC-003", "TEC-004"),
-            "RED", List.of("TEC-005", "TEC-006"),
-            "ACCESOS", List.of("TEC-007", "TEC-008"),
-            "OTRO", List.of("TEC-009", "TEC-010")
+            "HARDWARE", List.of("TEC-001", "TEC-002", "TEC-011"),
+            "SOFTWARE", List.of("TEC-003", "TEC-004", "TEC-012"),
+            "RED", List.of("TEC-005", "TEC-006", "TEC-013"),
+            "ACCESOS", List.of("TEC-007", "TEC-008", "TEC-014"),
+            "OTRO", List.of("TEC-009", "TEC-010", "TEC-015")
     );
 
     private static final int MAX_HOURS = 12;

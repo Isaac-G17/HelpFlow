@@ -4,6 +4,8 @@ import com.helpflow.ticket.domain.model.Technician;
 import com.helpflow.ticket.domain.model.enums.AccountStatus;
 import com.helpflow.ticket.domain.model.enums.Category;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface ManageTechnicianUseCase {
@@ -16,9 +18,11 @@ public interface ManageTechnicianUseCase {
     Technician update(Long technicianId, UpdateTechnicianCommand command);
 
     record CreateTechnicianCommand(String document, String name, String email, String password, String sede,
-                                   Category specialty, int maxActiveTickets) {
+                                   BigDecimal salary, LocalDate affiliationDate, Category specialty,
+                                   int maxActiveTickets) {
     }
 
-    record UpdateTechnicianCommand(Category specialty, String sede, int maxActiveTickets, AccountStatus status) {
+    record UpdateTechnicianCommand(Category specialty, String sede, BigDecimal salary, int maxActiveTickets,
+                                   AccountStatus status) {
     }
 }

@@ -52,18 +52,26 @@ Contraseña de todos: **`Password123*`**
 | Correo | Rol | Notas |
 |---|---|---|
 | admin@helpflow.com | ADMIN | Acceso completo |
-| tec01@helpflow.com … tec10@helpflow.com | TECNICO | TEC-001…TEC-010, 2 por categoría, sedes MEDELLIN/BOGOTA |
+| tec01@helpflow.com … tec15@helpflow.com | TECNICO | TEC-001…TEC-015, 3 por categoría (una por sede) |
 | ana@helpflow.com | USUARIO | MEDELLIN, tiene un ticket **vencido** (evidencia de la métrica) |
 | luis@helpflow.com | USUARIO | BOGOTA |
+| maria@helpflow.com | USUARIO | BARRANQUILLA, tiene un ticket ABIERTO sin técnico |
 | pedro@helpflow.com | USUARIO | **INACTIVO** (no puede iniciar sesión) |
 
-| Técnico | Especialidad | Sede |
-|---|---|---|
-| TEC-001 / TEC-002 | HARDWARE | MEDELLIN / BOGOTA |
-| TEC-003 / TEC-004 | SOFTWARE | MEDELLIN / BOGOTA |
-| TEC-005 / TEC-006 | RED | MEDELLIN / BOGOTA |
-| TEC-007 / TEC-008 | ACCESOS | MEDELLIN / BOGOTA |
-| TEC-009 / TEC-010 | OTRO | MEDELLIN / BOGOTA |
+Sedes semilla: **MEDELLIN, BOGOTA y BARRANQUILLA** (el campo sede es texto libre y se guarda en mayúsculas).
+
+| Especialidad | MEDELLIN | BOGOTA | BARRANQUILLA |
+|---|---|---|---|
+| HARDWARE | TEC-001 | TEC-002 | TEC-011 |
+| SOFTWARE | TEC-003 | TEC-004 | TEC-012 |
+| RED | TEC-005 | TEC-006 | TEC-013 |
+| ACCESOS | TEC-007 | TEC-008 | TEC-014 |
+| OTRO | TEC-009 | TEC-010 | TEC-015 |
+
+Cada técnico tiene **documento, nombre, salario, fecha de afiliación y estado** (ACTIVO / INACTIVO), más su perfil
+de soporte (especialidad, sede, carga máxima y tickets activos). Documento y nombre se guardan una sola vez en
+`users` (el técnico es un usuario con rol TECNICO); salario y fecha de afiliación en `technicians`.
+Reglas: salario > 0 y fecha de afiliación no futura (400 en la API, 422 si llega al dominio).
 
 ## 3. Endpoints
 
@@ -74,8 +82,8 @@ Contraseña de todos: **`Password123*`**
 | GET / PUT | `/api/users/me` | autenticado | Ver / editar mi información básica |
 | GET | `/api/users` | ADMIN | Listar usuarios (paginado) |
 | PATCH | `/api/users/{id}/status` | ADMIN | Activar / inactivar |
-| POST / GET | `/api/technicians` | ADMIN | Crear técnico (usuario TECNICO + perfil) / listar con su carga |
-| PUT | `/api/technicians/{id}` | ADMIN | Editar perfil de soporte |
+| POST / GET | `/api/technicians` | ADMIN | Crear técnico (usuario TECNICO + salario, afiliación y perfil) / listar con su carga |
+| PUT | `/api/technicians/{id}` | ADMIN | Editar perfil de soporte (especialidad, sede, salario, carga, estado) |
 | POST | `/api/tickets` | USUARIO, ADMIN | Registrar ticket → consulta dispatch → asignación inicial |
 | GET | `/api/tickets?status=&priority=&page=&size=` | todos | USUARIO: los suyos · TECNICO: asignados · ADMIN: todos |
 | GET | `/api/tickets/{id}` | todos | Detalle (403 si no es suyo / no está asignado a él) |
@@ -279,6 +287,7 @@ cd ../technician-dispatch-service && mvn test
 ## 9. Decisiones técnicas
 | Decisión | Por qué |
 |---|---|
+| Documento y nombre del técnico en `users`, salario y afiliación en `technicians` | El técnico es un usuario (inicia sesión con rol TECNICO): duplicar documento y nombre rompería la unicidad y podría desincronizarse. Los listados traen el usuario con `@EntityGraph` |
 | Dominio con relaciones por id (`requesterId`, `technicianId`) | El dominio no navega entidades JPA ni depende de lazy loading |
 | `CurrentUser` record de dominio como principal | Los casos de uso reciben quién actúa sin depender de Spring Security |
 | Propiedad en el caso de uso, rol en el controller | El rol es una regla de acceso HTTP; "este ticket es suyo" es regla de negocio |

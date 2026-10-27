@@ -6,8 +6,13 @@ import com.helpflow.ticket.domain.exception.TechnicianCapacityExceededException;
 import com.helpflow.ticket.domain.model.enums.AccountStatus;
 import com.helpflow.ticket.domain.model.enums.Category;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 /**
- * Perfil de soporte de un usuario con rol TECNICO.
+ * Técnico de soporte: documento, nombre, salario, fecha de afiliación y estado, más su perfil de soporte
+ * (especialidad, sede y carga). Documento y nombre pertenecen al usuario TECNICO vinculado (fuente única
+ * en la tabla users); aquí se exponen de solo lectura.
  * activeTickets funciona como un "stock": takeTicket() lo sube y releaseTicket() lo baja.
  * version permite el bloqueo optimista (@Version en la entidad JPA): si dos asignaciones
  * concurrentes toman al mismo técnico, la segunda falla con 409.
@@ -17,6 +22,10 @@ public class Technician {
     private final Long id;
     private final String code;
     private final Long userId;
+    private final String document;
+    private final String name;
+    private BigDecimal salary;
+    private final LocalDate affiliationDate;
     private Category specialty;
     private String sede;
     private AccountStatus status;
@@ -24,11 +33,16 @@ public class Technician {
     private int activeTickets;
     private final Long version;
 
-    public Technician(Long id, String code, Long userId, Category specialty, String sede, AccountStatus status,
+    public Technician(Long id, String code, Long userId, String document, String name, BigDecimal salary,
+                      LocalDate affiliationDate, Category specialty, String sede, AccountStatus status,
                       int maxActiveTickets, int activeTickets, Long version) {
         this.id = id;
         this.code = code;
         this.userId = userId;
+        this.document = document;
+        this.name = name;
+        this.salary = salary;
+        this.affiliationDate = affiliationDate;
         this.specialty = specialty;
         this.sede = sede;
         this.status = status;
@@ -37,13 +51,27 @@ public class Technician {
         this.version = version;
     }
 
-    public static Technician create(String code, Long userId, Category specialty, String sede, int maxActiveTickets) {
-        if (maxActiveTickets < 1) {
-            throw new BusinessRuleException("La carga máxima de tickets debe ser mayor que 0");
+    /**
+     * Crea el técnico a partir de su usuario TECNICO ya registrado.
+     *
+     * @param today fecha actual (inyectada para poder probar la regla "afiliación no futura")
+     */
+    public static Technician create(String code, User user, BigDecimal salary, LocalDate affiliationDate,
+                                    Category specialty, String sede, int maxActiveTickets, LocalDate today) {
+        DomainValidation.requireNonNull(user, "user");
+        validateSalary(salary);
+        DomainValidation.requireNonNull(affiliationDate, "affiliationDate");
+        if (affiliationDate.isAfter(today)) {
+            throw new BusinessRuleException("La fecha de afiliación no puede ser futura");
         }
+        validateMaxActiveTickets(maxActiveTickets);
         return new Technician(null,
                 DomainValidation.requireText(code, "code"),
-                DomainValidation.requireNonNull(userId, "userId"),
+                DomainValidation.requireNonNull(user.getId(), "userId"),
+                user.getDocument(),
+                user.getName(),
+                salary,
+                affiliationDate,
                 DomainValidation.requireNonNull(specialty, "specialty"),
                 DomainValidation.normalizeSede(sede),
                 AccountStatus.ACTIVO,
@@ -97,19 +125,32 @@ public class Technician {
         throw new UnsupportedOperationException("TODO: Technician.releaseTicket");
     }
 
-    /** Edición del perfil de soporte (ADMIN). */
-    public void updateProfile(Category specialty, String sede, int maxActiveTickets, AccountStatus status) {
-        if (maxActiveTickets < 1) {
-            throw new BusinessRuleException("La carga máxima de tickets debe ser mayor que 0");
-        }
+    /** Edición del perfil de soporte (ADMIN). La fecha de afiliación no se modifica. */
+    public void updateProfile(Category specialty, String sede, BigDecimal salary, int maxActiveTickets,
+                              AccountStatus status) {
+        validateSalary(salary);
+        validateMaxActiveTickets(maxActiveTickets);
         if (maxActiveTickets < activeTickets) {
             throw new BusinessRuleException("La carga máxima (" + maxActiveTickets
                     + ") no puede ser menor que los tickets activos actuales (" + activeTickets + ")");
         }
         this.specialty = DomainValidation.requireNonNull(specialty, "specialty");
         this.sede = DomainValidation.normalizeSede(sede);
+        this.salary = salary;
         this.maxActiveTickets = maxActiveTickets;
         this.status = DomainValidation.requireNonNull(status, "status");
+    }
+
+    private static void validateSalary(BigDecimal salary) {
+        if (salary == null || salary.signum() <= 0) {
+            throw new BusinessRuleException("El salario debe ser mayor que 0");
+        }
+    }
+
+    private static void validateMaxActiveTickets(int maxActiveTickets) {
+        if (maxActiveTickets < 1) {
+            throw new BusinessRuleException("La carga máxima de tickets debe ser mayor que 0");
+        }
     }
 
     /** Lanza si el técnico está inactivo (útil en reasignaciones manuales). */
@@ -129,6 +170,22 @@ public class Technician {
 
     public Long getUserId() {
         return userId;
+    }
+
+    public String getDocument() {
+        return document;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public BigDecimal getSalary() {
+        return salary;
+    }
+
+    public LocalDate getAffiliationDate() {
+        return affiliationDate;
     }
 
     public Category getSpecialty() {

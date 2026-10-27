@@ -177,11 +177,42 @@ class ApplicationIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/technicians").header(HttpHeaders.AUTHORIZATION, adminToken())
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"document":"%d","name":"Tecnico IT","email":"tec%d@helpflow.com",
-                                 "password":"Password123*","sede":"Cali","specialty":"SOFTWARE","maxActiveTickets":3}
+                                 "password":"Password123*","sede":"Barranquilla","salary":3250000.50,
+                                 "affiliationDate":"2024-03-01","specialty":"SOFTWARE","maxActiveTickets":3}
                                 """.formatted(n, n)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value(org.hamcrest.Matchers.startsWith("TEC-")))
+                .andExpect(jsonPath("$.document").value(String.valueOf(n)))
+                .andExpect(jsonPath("$.name").value("Tecnico IT"))
+                .andExpect(jsonPath("$.salary").value(3250000.50))
+                .andExpect(jsonPath("$.affiliationDate").value("2024-03-01"))
+                .andExpect(jsonPath("$.sede").value("BARRANQUILLA"))
                 .andExpect(jsonPath("$.activeTickets").value(0));
+    }
+
+    @Test
+    void crearTecnicoValidaSalarioYFechaDeAfiliacion() throws Exception {
+        long n = unique();
+        mockMvc.perform(post("/api/technicians").header(HttpHeaders.AUTHORIZATION, adminToken())
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"document":"%d","name":"Tecnico IT","email":"tec%d@helpflow.com",
+                                 "password":"Password123*","sede":"Medellin","salary":-5,
+                                 "affiliationDate":"2999-01-01","specialty":"RED","maxActiveTickets":3}
+                                """.formatted(n, n)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.salary").exists())
+                .andExpect(jsonPath("$.errors.affiliationDate").exists());
+    }
+
+    @Test
+    void tecnicosSemillaIncluyenBarranquillaConDocumentoNombreYSalario() throws Exception {
+        mockMvc.perform(get("/api/technicians").header(HttpHeaders.AUTHORIZATION, adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.code == 'TEC-013')].sede", hasItem("BARRANQUILLA")))
+                .andExpect(jsonPath("$[?(@.code == 'TEC-013')].name", hasItem("Tecnico Red 3")))
+                .andExpect(jsonPath("$[?(@.code == 'TEC-013')].document", hasItem("1000000113")))
+                .andExpect(jsonPath("$[?(@.code == 'TEC-013')].affiliationDate", hasItem("2020-08-31")))
+                .andExpect(jsonPath("$[*].salary", everyItem(notNullValue())));
     }
 
     @Test

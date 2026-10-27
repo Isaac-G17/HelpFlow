@@ -1,6 +1,6 @@
 -- =====================================================================
 -- V1: esquema base (usuarios, técnicos y tickets)
--- NUNCA editar esta migración una vez aplicada: los cambios van en V4, V5...
+-- Una vez entregado el proyecto, NO se edita una migración aplicada: los cambios van en V4, V5...
 -- =====================================================================
 
 CREATE TABLE users (
@@ -20,23 +20,28 @@ CREATE TABLE users (
     CONSTRAINT ck_users_role CHECK (role IN ('USUARIO', 'TECNICO', 'ADMIN'))
 );
 
+-- Perfil de soporte de un usuario TECNICO. Documento y nombre viven en users (fuente única);
+-- aquí van los datos propios del técnico: salario, fecha de afiliación, especialidad, sede y carga.
 CREATE TABLE technicians (
     id                 BIGSERIAL PRIMARY KEY,
-    code               VARCHAR(10) NOT NULL,
-    user_id            BIGINT      NOT NULL,
-    specialty          VARCHAR(10) NOT NULL,
-    sede               VARCHAR(60) NOT NULL,
-    status             VARCHAR(10) NOT NULL,
-    max_active_tickets INT         NOT NULL,
-    active_tickets     INT         NOT NULL DEFAULT 0,
-    version            BIGINT      NOT NULL DEFAULT 0,
+    code               VARCHAR(10)    NOT NULL,
+    user_id            BIGINT         NOT NULL,
+    salary             NUMERIC(12, 2) NOT NULL,
+    affiliation_date   DATE           NOT NULL,
+    specialty          VARCHAR(10)    NOT NULL,
+    sede               VARCHAR(60)    NOT NULL,
+    status             VARCHAR(10)    NOT NULL,
+    max_active_tickets INT            NOT NULL,
+    active_tickets     INT            NOT NULL DEFAULT 0,
+    version            BIGINT         NOT NULL DEFAULT 0,
     CONSTRAINT uk_technicians_code UNIQUE (code),
     CONSTRAINT uk_technicians_user UNIQUE (user_id),
     CONSTRAINT fk_technicians_user FOREIGN KEY (user_id) REFERENCES users (id),
     CONSTRAINT ck_technicians_specialty CHECK (specialty IN ('HARDWARE', 'SOFTWARE', 'RED', 'ACCESOS', 'OTRO')),
     CONSTRAINT ck_technicians_status CHECK (status IN ('ACTIVO', 'INACTIVO')),
     CONSTRAINT ck_technicians_load CHECK (active_tickets >= 0 AND active_tickets <= max_active_tickets),
-    CONSTRAINT ck_technicians_max CHECK (max_active_tickets > 0)
+    CONSTRAINT ck_technicians_max CHECK (max_active_tickets > 0),
+    CONSTRAINT ck_technicians_salary CHECK (salary > 0)
 );
 
 CREATE TABLE tickets (

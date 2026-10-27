@@ -29,7 +29,7 @@ class TechnicianDispatchServiceTest {
     void elTecnicoSugeridoPerteneceALaCategoria() {
         for (long id = 1; id <= 50; id++) {
             DispatchResponse response = service.dispatch(new DispatchRequest(id, "RED", "MEDIA"));
-            assertThat(response.tecnicoId()).isIn("TEC-005", "TEC-006");
+            assertThat(response.tecnicoId()).isIn("TEC-005", "TEC-006", "TEC-013");
             assertThat(response.tiempoEstimadoHoras()).isBetween(0, 12);
         }
     }
