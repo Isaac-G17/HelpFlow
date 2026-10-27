@@ -23,6 +23,13 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  http:
+    client:
+      # El RestClient.Builder autoconfigurado usa HttpURLConnection (simple) en vez del HttpClient del JDK,
+      # que en algunos equipos Windows falla al arrancar ("Unable to establish loopback connection").
+      factory: simple
+      connect-timeout: 2s
+      read-timeout: 3s
 
 helpflow:
   jwt:
@@ -31,8 +38,6 @@ helpflow:
     expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
   dispatch:
     base-url: ${DISPATCH_URL:http://localhost:8081}
-    connect-timeout: 2s
-    read-timeout: 3s
   sla:
     # Un ticket está "próximo a incumplir" cuando le queda <= este porcentaje de su ventana de SLA.
     escalation-threshold-percent: 20

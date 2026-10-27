@@ -292,6 +292,6 @@ cd ../technician-dispatch-service && mvn test
 | Dispatch con CRC32 | Determinista entre reinicios y JVMs (`String.hashCode` también lo es, pero CRC32 distribuye mejor) |
 | Catálogo de dispatch por categoría | Simula un servicio que conoce especialidades; las reglas internas (sede, carga, SLA) siguen decidiendo |
 | `Clock` inyectable | Pruebas de SLA deterministas |
-| `RestClient` con `SimpleClientHttpRequestFactory` | Timeouts explícitos y evita el `HttpClient` del JDK, que falla al iniciar en algunos Windows |
+| `RestClient.Builder` autoconfigurado con `spring.http.client.factory=simple` | Se usa el builder de Spring Boot (métricas `http.client.requests` incluidas) con timeouts por propiedades (2 s / 3 s); la fábrica `simple` (HttpURLConnection) evita el `HttpClient` del JDK, que falla al iniciar en algunos Windows |
 | Testcontainers 1.21.4 | La 1.21.3 que trae Boot 3.5.6 no habla con Docker Engine 29+ |
 | 501 para TODO pendientes | Modo estudio: la API indica claramente qué falta implementar |

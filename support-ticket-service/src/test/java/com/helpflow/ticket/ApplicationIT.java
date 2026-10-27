@@ -7,13 +7,18 @@ import com.helpflow.ticket.domain.model.Availability;
 import com.helpflow.ticket.domain.model.Category;
 import com.helpflow.ticket.domain.model.DispatchSuggestion;
 import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.infrastructure.adapter.out.dispatch.TechnicianDispatchRestAdapter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -39,6 +44,12 @@ class ApplicationIT extends AbstractIntegrationTest {
     /** Dispatch simulado: las IT no dependen de que el otro microservicio esté arriba. */
     @MockitoBean
     private TechnicianDispatchPort dispatchPort;
+
+    @Autowired
+    private RestClient.Builder restClientBuilder;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     // ======================= Infraestructura =======================
 
@@ -67,6 +78,17 @@ class ApplicationIT extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         // V3 siembra un ticket vencido.
         assertThat(body).contains("helpflow_tickets_overdue");
+    }
+
+    @Test
+    void elAdapterDeDispatchTraduceUnaFallaDeRedAExcepcionDeDominio() {
+        // Builder real autoconfigurado (spring.http.client.factory=simple) contra un puerto cerrado.
+        TechnicianDispatchRestAdapter adapter = new TechnicianDispatchRestAdapter(
+                restClientBuilder.baseUrl("http://localhost:1").build(), meterRegistry);
+
+        assertThatThrownBy(() -> adapter.requestTechnician(1L, Category.RED, Priority.ALTA))
+                .isInstanceOf(TechnicianDispatchUnavailableException.class);
+        assertThat(meterRegistry.find("helpflow.dispatch.time").tag("outcome", "error").timer()).isNotNull();
     }
 
     // ======================= Autenticación =======================
