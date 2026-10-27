@@ -1,4 +1,4 @@
-package com.helpflow.ticket.domain.model;
+package com.helpflow.ticket.domain.model.enums;
 
 public enum HistoryAction {
     CREATED,

@@ -1,9 +1,9 @@
 package com.helpflow.ticket.application.port.in;
 
-import com.helpflow.ticket.domain.model.AccountStatus;
 import com.helpflow.ticket.domain.model.PageQuery;
 import com.helpflow.ticket.domain.model.PageResult;
 import com.helpflow.ticket.domain.model.User;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
 
 public interface ManageUserUseCase {
 

@@ -1,7 +1,7 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence.entity;
 
-import com.helpflow.ticket.domain.model.AccountStatus;
-import com.helpflow.ticket.domain.model.Role;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

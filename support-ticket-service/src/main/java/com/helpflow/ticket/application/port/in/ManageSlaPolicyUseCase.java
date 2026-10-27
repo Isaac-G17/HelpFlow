@@ -1,7 +1,7 @@
 package com.helpflow.ticket.application.port.in;
 
-import com.helpflow.ticket.domain.model.Priority;
 import com.helpflow.ticket.domain.model.SlaPolicy;
+import com.helpflow.ticket.domain.model.enums.Priority;
 
 import java.util.List;
 

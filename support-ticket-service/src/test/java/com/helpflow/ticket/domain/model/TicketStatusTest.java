@@ -1,5 +1,8 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -2,10 +2,10 @@ package com.helpflow.ticket.infrastructure.adapter.out.dispatch;
 
 import com.helpflow.ticket.application.port.out.TechnicianDispatchPort;
 import com.helpflow.ticket.domain.exception.TechnicianDispatchUnavailableException;
-import com.helpflow.ticket.domain.model.Availability;
-import com.helpflow.ticket.domain.model.Category;
 import com.helpflow.ticket.domain.model.DispatchSuggestion;
-import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.domain.model.enums.Availability;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;

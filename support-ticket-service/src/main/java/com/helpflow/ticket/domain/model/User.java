@@ -2,6 +2,8 @@ package com.helpflow.ticket.domain.model;
 
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
 import com.helpflow.ticket.domain.exception.InactiveUserException;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Role;
 
 import java.time.Instant;
 import java.util.Locale;

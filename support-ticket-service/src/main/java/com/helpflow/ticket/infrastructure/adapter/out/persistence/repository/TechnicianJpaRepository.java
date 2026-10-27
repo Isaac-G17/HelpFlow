@@ -1,7 +1,7 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence.repository;
 
-import com.helpflow.ticket.domain.model.AccountStatus;
-import com.helpflow.ticket.domain.model.Category;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.entity.TechnicianEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 

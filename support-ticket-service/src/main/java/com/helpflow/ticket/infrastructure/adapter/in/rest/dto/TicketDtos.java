@@ -1,9 +1,9 @@
 package com.helpflow.ticket.infrastructure.adapter.in.rest.dto;
 
-import com.helpflow.ticket.domain.model.Category;
-import com.helpflow.ticket.domain.model.HistoryAction;
-import com.helpflow.ticket.domain.model.Priority;
-import com.helpflow.ticket.domain.model.TicketStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.HistoryAction;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import com.helpflow.ticket.infrastructure.adapter.in.rest.validation.ValidStatusChange;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

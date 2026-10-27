@@ -1,7 +1,7 @@
 package com.helpflow.ticket.infrastructure.adapter.in.rest.dto;
 
-import com.helpflow.ticket.domain.model.AccountStatus;
-import com.helpflow.ticket.domain.model.Category;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

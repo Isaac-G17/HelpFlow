@@ -2,7 +2,7 @@ package com.helpflow.ticket.application.port.in;
 
 import com.helpflow.ticket.domain.model.CurrentUser;
 import com.helpflow.ticket.domain.model.Ticket;
-import com.helpflow.ticket.domain.model.TicketStatus;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 
 public interface ChangeTicketStatusUseCase {
 

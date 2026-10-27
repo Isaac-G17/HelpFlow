@@ -1,5 +1,8 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.AssignmentOrigin;
+import com.helpflow.ticket.domain.model.enums.Availability;
+
 import java.time.Instant;
 
 /** Registro de qué técnico atiende un ticket y por qué. Solo una asignación activa por ticket. */

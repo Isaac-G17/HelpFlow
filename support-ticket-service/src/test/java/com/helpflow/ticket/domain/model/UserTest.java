@@ -2,6 +2,7 @@ package com.helpflow.ticket.domain.model;
 
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
 import com.helpflow.ticket.domain.exception.InactiveUserException;
+import com.helpflow.ticket.domain.model.enums.Role;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

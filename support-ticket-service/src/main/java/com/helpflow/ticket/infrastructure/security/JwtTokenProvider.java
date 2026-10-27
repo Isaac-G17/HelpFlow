@@ -2,8 +2,8 @@ package com.helpflow.ticket.infrastructure.security;
 
 import com.helpflow.ticket.application.port.out.TokenProviderPort;
 import com.helpflow.ticket.domain.model.CurrentUser;
-import com.helpflow.ticket.domain.model.Role;
 import com.helpflow.ticket.domain.model.User;
+import com.helpflow.ticket.domain.model.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

@@ -1,6 +1,6 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence.entity;
 
-import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

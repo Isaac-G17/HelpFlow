@@ -1,5 +1,11 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.Role;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
+
 import java.time.Instant;
 
 /** Fábricas de objetos de dominio para las pruebas (sin pasar por los TODO). */

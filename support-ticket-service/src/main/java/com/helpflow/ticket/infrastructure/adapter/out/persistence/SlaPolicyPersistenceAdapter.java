@@ -1,8 +1,8 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence;
 
 import com.helpflow.ticket.application.port.out.SlaPolicyRepositoryPort;
-import com.helpflow.ticket.domain.model.Priority;
 import com.helpflow.ticket.domain.model.SlaPolicy;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.entity.SlaPolicyEntity;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.mapper.PersistenceMapper;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.repository.SlaPolicyJpaRepository;

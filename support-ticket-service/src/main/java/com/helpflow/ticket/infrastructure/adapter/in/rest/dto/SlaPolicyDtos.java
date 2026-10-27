@@ -1,6 +1,6 @@
 package com.helpflow.ticket.infrastructure.adapter.in.rest.dto;
 
-import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.infrastructure.adapter.in.rest.validation.ValidSlaPolicy;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;

@@ -1,10 +1,10 @@
 package com.helpflow.ticket.infrastructure.adapter.out.metrics;
 
 import com.helpflow.ticket.application.port.out.TicketMetricsPort;
-import com.helpflow.ticket.domain.model.AssignmentOrigin;
-import com.helpflow.ticket.domain.model.Category;
-import com.helpflow.ticket.domain.model.Priority;
-import com.helpflow.ticket.domain.model.TicketStatus;
+import com.helpflow.ticket.domain.model.enums.AssignmentOrigin;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;

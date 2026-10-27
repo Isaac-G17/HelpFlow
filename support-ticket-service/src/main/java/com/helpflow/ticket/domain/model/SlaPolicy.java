@@ -1,6 +1,7 @@
 package com.helpflow.ticket.domain.model;
 
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
+import com.helpflow.ticket.domain.model.enums.Priority;
 
 import java.time.Duration;
 import java.time.Instant;

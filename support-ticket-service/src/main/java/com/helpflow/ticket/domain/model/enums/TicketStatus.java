@@ -1,6 +1,4 @@
-   
-   
-   package com.helpflow.ticket.domain.model;
+package com.helpflow.ticket.domain.model.enums;
 
 import java.util.Set;
 

@@ -2,7 +2,7 @@ package com.helpflow.ticket.infrastructure.adapter.in.rest;
 
 import com.helpflow.ticket.application.port.in.ManageSlaPolicyUseCase;
 import com.helpflow.ticket.application.port.in.ManageSlaPolicyUseCase.UpdateSlaPolicyCommand;
-import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.infrastructure.adapter.in.rest.dto.SlaPolicyDtos.SlaPolicyRequest;
 import com.helpflow.ticket.infrastructure.adapter.in.rest.dto.SlaPolicyDtos.SlaPolicyResponse;
 import com.helpflow.ticket.infrastructure.adapter.in.rest.mapper.RestMapper;

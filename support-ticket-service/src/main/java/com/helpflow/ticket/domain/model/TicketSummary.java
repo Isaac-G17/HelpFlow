@@ -1,5 +1,9 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
+
 import java.time.Instant;
 
 /**

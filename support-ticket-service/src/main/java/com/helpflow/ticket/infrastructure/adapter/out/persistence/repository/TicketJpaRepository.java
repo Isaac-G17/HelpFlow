@@ -1,6 +1,6 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence.repository;
 
-import com.helpflow.ticket.domain.model.TicketStatus;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.entity.TicketEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

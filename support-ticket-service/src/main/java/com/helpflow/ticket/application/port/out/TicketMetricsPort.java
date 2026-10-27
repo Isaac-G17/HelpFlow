@@ -1,9 +1,9 @@
 package com.helpflow.ticket.application.port.out;
 
-import com.helpflow.ticket.domain.model.AssignmentOrigin;
-import com.helpflow.ticket.domain.model.Category;
-import com.helpflow.ticket.domain.model.Priority;
-import com.helpflow.ticket.domain.model.TicketStatus;
+import com.helpflow.ticket.domain.model.enums.AssignmentOrigin;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 
 import java.time.Duration;
 

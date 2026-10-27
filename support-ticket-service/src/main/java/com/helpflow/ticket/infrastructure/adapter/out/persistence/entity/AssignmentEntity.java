@@ -1,7 +1,7 @@
 package com.helpflow.ticket.infrastructure.adapter.out.persistence.entity;
 
-import com.helpflow.ticket.domain.model.AssignmentOrigin;
-import com.helpflow.ticket.domain.model.Availability;
+import com.helpflow.ticket.domain.model.enums.AssignmentOrigin;
+import com.helpflow.ticket.domain.model.enums.Availability;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

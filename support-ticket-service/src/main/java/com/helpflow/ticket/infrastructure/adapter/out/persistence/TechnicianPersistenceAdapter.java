@@ -2,9 +2,9 @@ package com.helpflow.ticket.infrastructure.adapter.out.persistence;
 
 import com.helpflow.ticket.application.port.out.TechnicianRepositoryPort;
 import com.helpflow.ticket.domain.exception.ResourceNotFoundException;
-import com.helpflow.ticket.domain.model.AccountStatus;
-import com.helpflow.ticket.domain.model.Category;
 import com.helpflow.ticket.domain.model.Technician;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.entity.TechnicianEntity;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.mapper.PersistenceMapper;
 import com.helpflow.ticket.infrastructure.adapter.out.persistence.repository.TechnicianJpaRepository;

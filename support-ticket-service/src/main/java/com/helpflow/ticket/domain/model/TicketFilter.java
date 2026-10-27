@@ -1,5 +1,8 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
+
 /** Criterios de búsqueda de tickets. Un campo null significa "sin filtrar por ese campo". */
 public record TicketFilter(Long requesterId, Long technicianId, TicketStatus status, Priority priority) {
 

@@ -3,6 +3,10 @@ package com.helpflow.ticket.domain.model;
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
 import com.helpflow.ticket.domain.exception.ForbiddenOperationException;
 import com.helpflow.ticket.domain.exception.InvalidStateTransitionException;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
+import com.helpflow.ticket.domain.model.enums.Role;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
 
 import java.time.Duration;
 import java.time.Instant;

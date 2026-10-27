@@ -1,4 +1,4 @@
-package com.helpflow.ticket.domain.model;
+package com.helpflow.ticket.domain.model.enums;
 
 /** De dónde salió el técnico asignado. */
 public enum AssignmentOrigin {

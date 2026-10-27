@@ -3,6 +3,8 @@ package com.helpflow.ticket.domain.model;
 import com.helpflow.ticket.domain.exception.BusinessRuleException;
 import com.helpflow.ticket.domain.exception.InactiveUserException;
 import com.helpflow.ticket.domain.exception.TechnicianCapacityExceededException;
+import com.helpflow.ticket.domain.model.enums.AccountStatus;
+import com.helpflow.ticket.domain.model.enums.Category;
 
 /**
  * Perfil de soporte de un usuario con rol TECNICO.

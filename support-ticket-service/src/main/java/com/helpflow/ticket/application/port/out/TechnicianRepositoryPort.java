@@ -1,7 +1,7 @@
 package com.helpflow.ticket.application.port.out;
 
-import com.helpflow.ticket.domain.model.Category;
 import com.helpflow.ticket.domain.model.Technician;
+import com.helpflow.ticket.domain.model.enums.Category;
 
 import java.util.List;
 import java.util.Optional;

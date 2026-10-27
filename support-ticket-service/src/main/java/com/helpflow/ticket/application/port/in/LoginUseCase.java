@@ -1,6 +1,6 @@
 package com.helpflow.ticket.application.port.in;
 
-import com.helpflow.ticket.domain.model.Role;
+import com.helpflow.ticket.domain.model.enums.Role;
 
 public interface LoginUseCase {
 

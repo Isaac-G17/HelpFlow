@@ -1,6 +1,6 @@
 package com.helpflow.ticket.infrastructure.adapter.in.rest.dto;
 
-import com.helpflow.ticket.domain.model.Role;
+import com.helpflow.ticket.domain.model.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

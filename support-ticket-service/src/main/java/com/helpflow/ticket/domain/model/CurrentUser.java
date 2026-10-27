@@ -1,5 +1,7 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.Role;
+
 /** Usuario autenticado (lo construye el filtro JWT y llega a los casos de uso). */
 public record CurrentUser(Long id, String email, Role role) {
 

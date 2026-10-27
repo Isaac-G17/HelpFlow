@@ -1,5 +1,8 @@
 package com.helpflow.ticket.domain.model;
 
+import com.helpflow.ticket.domain.model.enums.HistoryAction;
+import com.helpflow.ticket.domain.model.enums.TicketStatus;
+
 import java.time.Instant;
 
 /** Entrada inmutable de la trazabilidad de un ticket. performedBy es null cuando actúa el sistema. */

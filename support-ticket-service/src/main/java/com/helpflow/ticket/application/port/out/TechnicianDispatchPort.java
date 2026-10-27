@@ -1,8 +1,8 @@
 package com.helpflow.ticket.application.port.out;
 
-import com.helpflow.ticket.domain.model.Category;
 import com.helpflow.ticket.domain.model.DispatchSuggestion;
-import com.helpflow.ticket.domain.model.Priority;
+import com.helpflow.ticket.domain.model.enums.Category;
+import com.helpflow.ticket.domain.model.enums.Priority;
 
 public interface TechnicianDispatchPort {
 
