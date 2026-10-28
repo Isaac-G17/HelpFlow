@@ -50,11 +50,10 @@ services:
     networks:
       - helpflow-net
 
-  # ---------- Monitoreo (opcional): docker compose --profile monitoring up -d ----------
+  # ---------- Monitoreo: Prometheus lee /actuator/prometheus y Grafana lo muestra ----------
   prometheus:
     image: prom/prometheus:v3.1.0
     container_name: helpflow-prometheus
-    profiles: ["monitoring"]
     depends_on:
       - support-ticket-service
     volumes:
@@ -72,7 +71,6 @@ services:
   grafana:
     image: grafana/grafana:11.4.0
     container_name: helpflow-grafana
-    profiles: ["monitoring"]
     depends_on:
       - prometheus
     environment:
