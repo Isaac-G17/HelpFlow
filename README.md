@@ -202,15 +202,15 @@ Los dos servicios se comunican por la red interna de Docker usando el nombre del
 ## 7. Pruebas
 ```bash
 cd support-ticket-service
-mvn test                       # 46 unitarias: dominio y casos de uso (Mockito)
-mvn test -Dtest=ApplicationIT  # 24 de integración: PostgreSQL real con Testcontainers (requiere Docker)
+mvn test                       # 87 unitarias: dominio y casos de uso (Mockito)
+mvn test -Dtest=ApplicationIT  # 26 de integración: PostgreSQL real con Testcontainers (requiere Docker)
 ```
 
-**Unitarias:** 46 pruebas, 0 fallos.
+**Unitarias:** 87 pruebas, 0 fallos.
 
 ![Pruebas unitarias](docs/capturas/05-pruebas-unitarias.png)
 
-**Integración:** 24 pruebas, 0 fallos.
+**Integración:** 26 pruebas, 0 fallos.
 
 ![Pruebas de integración](docs/capturas/06-pruebas-integracion.png)
 
