@@ -4,18 +4,27 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.helpflow.ticket.application.port.out.TechnicianDispatchPort;
 import com.helpflow.ticket.domain.exception.TechnicianDispatchUnavailableException;
 import com.helpflow.ticket.domain.model.DispatchSuggestion;
+import com.helpflow.ticket.domain.model.TestData;
 import com.helpflow.ticket.domain.model.enums.Availability;
 import com.helpflow.ticket.domain.model.enums.Category;
 import com.helpflow.ticket.domain.model.enums.Priority;
 import com.helpflow.ticket.infrastructure.adapter.out.dispatch.TechnicianDispatchRestAdapter;
+import com.helpflow.ticket.infrastructure.security.JwtProperties;
+import com.helpflow.ticket.infrastructure.security.JwtTokenProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +60,12 @@ class ApplicationIT extends AbstractIntegrationTest {
 
     @Autowired
     private MeterRegistry meterRegistry;
+
+    @Autowired
+    private JwtProperties jwtProperties;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     // ======================= Infraestructura =======================
 
@@ -164,6 +179,19 @@ class ApplicationIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.traceId", notNullValue()));
         mockMvc.perform(get("/api/tickets").header(HttpHeaders.AUTHORIZATION, "Bearer token.falso.xyz"))
                 .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Token inválido o expirado"));
+    }
+
+    @Test
+    void tokenExpiradoDevuelve401() throws Exception {
+        // Mismo secreto que la app, pero emitido hace 2 h con 1 h de vigencia.
+        String expired = new JwtTokenProvider(new JwtProperties(jwtProperties.secret(), 3600),
+                Clock.fixed(Instant.now().minus(Duration.ofHours(2)), ZoneOffset.UTC))
+                .generateToken(TestData.activeUser(1L));
+
+        mockMvc.perform(get("/api/tickets").header(HttpHeaders.AUTHORIZATION, "Bearer " + expired))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Token inválido o expirado"));
     }
 
@@ -360,6 +388,115 @@ class ApplicationIT extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(statusChange("CERRADO")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CERRADO"));
+    }
+
+    /**
+     * Ciclo de vida completo: login -> crear (asignación por dispatch) -> reasignar (ADMIN) ->
+     * escalar por SLA -> atender y resolver (técnico nuevo) -> cerrar (solicitante), con historial y cargas.
+     */
+    @Test
+    void flujoCompletoConReasignacionYEscalamiento() throws Exception {
+        when(dispatchPort.requestTechnician(anyLong(), any(Category.class), any(Priority.class)))
+                .thenAnswer(inv -> new DispatchSuggestion(inv.getArgument(0), "TEC-007", Availability.ALTA, 1));
+        String ana = login("ana@helpflow.com", SEED_PASSWORD);
+        String admin = adminToken();
+        String tec07 = login("tec07@helpflow.com", SEED_PASSWORD);
+        String tec08 = login("tec08@helpflow.com", SEED_PASSWORD);
+        long tec007Id = technicianId(admin, "TEC-007");
+        long tec008Id = technicianId(admin, "TEC-008");
+        int tec008LoadBefore = technicianLoad(admin, "TEC-008");
+
+        // 1. Ana crea el ticket y queda asignado a TEC-007 (sugerido por dispatch).
+        long id = json(mockMvc.perform(post("/api/tickets").header(HttpHeaders.AUTHORIZATION, ana)
+                        .contentType(MediaType.APPLICATION_JSON).content(newTicket("ACCESOS", "MEDIA", "MEDELLIN")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("ASIGNADO"))
+                .andExpect(jsonPath("$.technicianId").value(tec007Id))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        int tec007LoadAfterAssign = technicianLoad(admin, "TEC-007");
+
+        // 2. Un usuario no puede reasignar; el ADMIN sí (ACCESOS de Bogotá).
+        mockMvc.perform(put("/api/tickets/" + id + "/assignment").header(HttpHeaders.AUTHORIZATION, ana)
+                        .contentType(MediaType.APPLICATION_JSON).content(reassign(tec008Id)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/tickets/" + id + "/assignment").header(HttpHeaders.AUTHORIZATION, admin)
+                        .contentType(MediaType.APPLICATION_JSON).content(reassign(tec008Id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ASIGNADO"))
+                .andExpect(jsonPath("$.technicianId").value(tec008Id));
+        assertThat(technicianLoad(admin, "TEC-007")).isEqualTo(tec007LoadAfterAssign - 1);
+        assertThat(technicianLoad(admin, "TEC-008")).isEqualTo(tec008LoadBefore + 1);
+
+        // El técnico anterior ya no ve el ticket; el nuevo sí.
+        mockMvc.perform(get("/api/tickets/" + id).header(HttpHeaders.AUTHORIZATION, tec07))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/tickets/" + id).header(HttpHeaders.AUTHORIZATION, tec08))
+                .andExpect(status().isOk());
+
+        // 3. Se consume el 90 % de la ventana de SLA (10 h) y el ADMIN corre el escalamiento.
+        jdbcTemplate.update("UPDATE tickets SET created_at = now() - interval '9 hours', "
+                + "sla_deadline = now() + interval '1 hour' WHERE id = ?", id);
+        mockMvc.perform(post("/api/tickets/escalations/run").header(HttpHeaders.AUTHORIZATION, ana))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/tickets/escalations/run").header(HttpHeaders.AUTHORIZATION, admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.escalated").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+        mockMvc.perform(get("/api/tickets/" + id).header(HttpHeaders.AUTHORIZATION, ana))
+                .andExpect(jsonPath("$.priority").value("ALTA"))
+                .andExpect(jsonPath("$.escalated").value(true));
+
+        // 4. El técnico nuevo atiende y resuelve; la solicitante cierra.
+        mockMvc.perform(patch("/api/tickets/" + id + "/status").header(HttpHeaders.AUTHORIZATION, tec08)
+                        .contentType(MediaType.APPLICATION_JSON).content(statusChange("EN_PROGRESO")))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/tickets/" + id + "/status").header(HttpHeaders.AUTHORIZATION, tec08)
+                        .contentType(MediaType.APPLICATION_JSON).content(statusChange("RESUELTO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resolvedAt", notNullValue()));
+        assertThat(technicianLoad(admin, "TEC-008")).isEqualTo(tec008LoadBefore);
+        mockMvc.perform(patch("/api/tickets/" + id + "/status").header(HttpHeaders.AUTHORIZATION, ana)
+                        .contentType(MediaType.APPLICATION_JSON).content(statusChange("CERRADO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CERRADO"));
+
+        // Un ticket cerrado ya no admite cambios.
+        mockMvc.perform(patch("/api/tickets/" + id + "/status").header(HttpHeaders.AUTHORIZATION, admin)
+                        .contentType(MediaType.APPLICATION_JSON).content(statusChange("EN_PROGRESO")))
+                .andExpect(status().isConflict());
+
+        // 5. El historial cuenta toda la historia.
+        mockMvc.perform(get("/api/tickets/" + id + "/history").header(HttpHeaders.AUTHORIZATION, ana))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].action", hasItem("CREATED")))
+                .andExpect(jsonPath("$[*].action", hasItem("ASSIGNED")))
+                .andExpect(jsonPath("$[*].action", hasItem("REASSIGNED")))
+                .andExpect(jsonPath("$[*].action", hasItem("ESCALATED")))
+                .andExpect(jsonPath("$[*].toStatus", hasItem("CERRADO")));
+    }
+
+    private JsonNode technician(String adminToken, String code) throws Exception {
+        JsonNode technicians = json(mockMvc.perform(get("/api/technicians").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        for (JsonNode technician : technicians) {
+            if (code.equals(technician.get("code").asText())) {
+                return technician;
+            }
+        }
+        throw new AssertionError("No existe el técnico " + code);
+    }
+
+    private long technicianId(String adminToken, String code) throws Exception {
+        return technician(adminToken, code).get("id").asLong();
+    }
+
+    private int technicianLoad(String adminToken, String code) throws Exception {
+        return technician(adminToken, code).get("activeTickets").asInt();
+    }
+
+    private static String reassign(long technicianId) {
+        return """
+                {"technicianId":%d,"observation":"Reasignado en prueba de integración"}""".formatted(technicianId);
     }
 
     private static String newTicket(String category, String priority, String sede) {
